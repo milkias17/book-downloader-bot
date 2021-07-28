@@ -8,7 +8,7 @@ A bot that provides download links for any book you'd like.
 2. Bot will send you options matching the book name. Click on your book.
 3. Bot will send you a pdf file of the book!
 
-![Usage Screenshot](images/bot-usage.png)
+![Usage Screenshot](images/bot-usage-example.png)
 
 ## Getting Started
 Get your own Telegram token from BotFather. More on that [here](https://core.telegram.org/bots). Then, create an environment variable named TG_API_KEY or just replace API_KEY at the top of main.py
