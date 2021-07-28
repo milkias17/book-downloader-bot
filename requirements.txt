@@ -1,0 +1,2 @@
+libgen_api==0.5.0
+pyTelegramBotAPI==3.8.2
