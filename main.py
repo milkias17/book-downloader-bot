@@ -2,13 +2,11 @@ import telebot
 from telebot import types
 from libgen_api import LibgenSearch
 import os
+import db
 
 API_KEY = os.getenv("TG_API_KEY")
 bot = telebot.TeleBot(API_KEY)
 libgen = LibgenSearch()
-
-# Dictonary to contain most recent book request for all bot users
-current_results = dict()
 
 def get_books(book_title):
     """
@@ -22,7 +20,7 @@ def get_books(book_title):
         size = book["Size"].split()
         size_num = int(size[0])
         size_ext = size[1]
-        if size_ext not in ["Mb", "Kb|"]:
+        if size_ext not in ["Mb", "Kb"]:
             results.remove(book)
         elif size_ext == 'Mb' and size_num > 20:
             results.remove(book)
@@ -62,15 +60,11 @@ def callbacks(callback):
     """
     chat_id = int(callback.data.split('|')[0])
     index = int(callback.data.split('|')[1])
-    # try:
-    book_link = get_book_link(current_results[chat_id][index])
+    book_link = get_book_link(db.get_results(chat_id)[index])
     bot.send_document(callback.message.chat.id, book_link)
-    # except Exception as e:
-    #     print(e)
 
 @bot.message_handler(commands=["download"])
 def download(message):
-    global current_results
     if len(message.text.split()) < 2:
         bot.send_message(message.chat.id, "Please enter the book name after /download")
 
@@ -80,7 +74,10 @@ def download(message):
         if not books:
             bot.send_message(message.chat.id, "Could not find the book you just sent :(")
         else:
-            current_results[message.chat.id] = books
+            if db.exists(message.chat.id):
+                db.update_results(message.chat.id, str(books))
+            else:
+                db.insert_results(message.chat.id, str(books))
             keyboard = get_keyboard_markup(books, message.chat.id)
             bot.send_message(message.chat.id, "Choose your book:", reply_markup=keyboard)
     except IndexError:
@@ -90,14 +87,17 @@ def download(message):
 
 @bot.message_handler(content_types=['text'], regexp="^[^/]")
 def download2(message):
-    global current_results
     book_title = message.text
     try:
         books = get_books(book_title)
         if not books:
             bot.send_message(message.chat.id, "Could not find the book you just sent :(")
         else:
-            current_results[message.chat.id] = books
+            if db.exists(message.chat.id):
+                db.update_results(message.chat.id, str(books))
+            else:
+                db.insert_results(message.chat.id, str(books))
+
             keyboard = get_keyboard_markup(books, message.chat.id)
             bot.send_message(message.chat.id, "Choose your book:", reply_markup=keyboard)
     except IndexError:
