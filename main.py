@@ -62,11 +62,11 @@ def callbacks(callback):
     """
     chat_id = int(callback.data.split('|')[0])
     index = int(callback.data.split('|')[1])
-    # try:
-    book_link = get_book_link(current_results[chat_id][index])
-    bot.send_document(callback.message.chat.id, book_link)
-    # except Exception as e:
-    #     print(e)
+    try:
+        book_link = get_book_link(current_results[chat_id][index])
+        bot.send_document(callback.message.chat.id, book_link)
+    except Exception as e:
+        bot.send_message(chat_id, "That is an old request, send me the book name again.")
 
 @bot.message_handler(commands=["download"])
 def download(message):
