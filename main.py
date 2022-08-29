@@ -1,18 +1,24 @@
-import telebot
-from telebot import types
-from libgen_api import LibgenSearch
 import os
+
+import telebot
+from dotenv import load_dotenv
+from libgen_api import LibgenSearch
+from telebot import types
+
 import db
+
+load_dotenv()
 
 API_KEY = os.getenv("TG_API_KEY")
 bot = telebot.TeleBot(API_KEY)
 libgen = LibgenSearch()
 
+
 def get_books(book_title):
     """
-        Takes a book title and returns a dictionary containing info about the book
+    Takes a book title and returns a dictionary containing info about the book
     """
-    title_filters = {"Extension" : "pdf"}
+    title_filters = {"Extension": "pdf"}
     results = libgen.search_title_filtered(book_title, title_filters, exact_match=True)
 
     # Workaround  for telegram not allowing url document sends of more than 20MB
@@ -22,10 +28,11 @@ def get_books(book_title):
         size_ext = size[1]
         if size_ext not in ["Mb", "Kb"]:
             results.remove(book)
-        elif size_ext == 'Mb' and size_num > 20:
+        elif size_ext == "Mb" and size_num > 20:
             results.remove(book)
 
     return results
+
 
 def get_keyboard_markup(results, chat_id):
     """
@@ -44,6 +51,7 @@ def get_keyboard_markup(results, chat_id):
     keyboard.add(*keys)
     return keyboard
 
+
 def get_book_link(book):
     """
     Return a download link for book
@@ -53,45 +61,57 @@ def get_book_link(book):
     book_link = libgen.resolve_download_links(book)
     return book_link["Cloudflare"]
 
+
 @bot.callback_query_handler(func=lambda callback: True)
 def callbacks(callback):
     """
     Sends the book to user after button click
     """
-    chat_id = int(callback.data.split('|')[0])
-    index = int(callback.data.split('|')[1])
+    chat_id = int(callback.data.split("|")[0])
+    index = int(callback.data.split("|")[1])
     book_link = get_book_link(db.get_results(chat_id)[index])
     bot.send_document(callback.message.chat.id, book_link)
+
 
 @bot.message_handler(commands=["download"])
 def download(message):
     if len(message.text.split()) < 2:
         bot.send_message(message.chat.id, "Please enter the book name after /download")
 
-    book_title = ' '.join(message.text.split()[1:])
+    book_title = " ".join(message.text.split()[1:])
     try:
         books = get_books(book_title)
         if not books:
-            bot.send_message(message.chat.id, "Could not find the book you just sent :(")
+            bot.send_message(
+                message.chat.id, "Could not find the book you just sent :("
+            )
         else:
             if db.exists(message.chat.id):
                 db.update_results(message.chat.id, str(books))
             else:
                 db.insert_results(message.chat.id, str(books))
             keyboard = get_keyboard_markup(books, message.chat.id)
-            bot.send_message(message.chat.id, "Choose your book:", reply_markup=keyboard)
+            bot.send_message(
+                message.chat.id, "Choose your book:", reply_markup=keyboard
+            )
     except IndexError:
-        bot.send_message(message.chat.id, "I am really sorry but I'm having technical issues, please try again")
+        bot.send_message(
+            message.chat.id,
+            "I am really sorry but I'm having technical issues, please try again",
+        )
     except Exception as e:
         print(e)
 
-@bot.message_handler(content_types=['text'], regexp="^[^/]")
+
+@bot.message_handler(content_types=["text"], regexp="^[^/]")
 def download2(message):
     book_title = message.text
     try:
         books = get_books(book_title)
         if not books:
-            bot.send_message(message.chat.id, "Could not find the book you just sent :(")
+            bot.send_message(
+                message.chat.id, "Could not find the book you just sent :("
+            )
         else:
             if db.exists(message.chat.id):
                 db.update_results(message.chat.id, str(books))
@@ -99,12 +119,18 @@ def download2(message):
                 db.insert_results(message.chat.id, str(books))
 
             keyboard = get_keyboard_markup(books, message.chat.id)
-            bot.send_message(message.chat.id, "Choose your book:", reply_markup=keyboard)
+            bot.send_message(
+                message.chat.id, "Choose your book:", reply_markup=keyboard
+            )
     except IndexError:
-        bot.send_message(message.chat.id, "I am really sorry but I'm having technical issues please try again")
+        bot.send_message(
+            message.chat.id,
+            "I am really sorry but I'm having technical issues please try again",
+        )
     except Exception as e:
         print(e)
-    
+
+
 @bot.message_handler(commands=["start"])
 def welcome_user(message):
     welcome_msg = f"""Hello {message.chat.first_name}, I can help you download any book you want. Just send me the book name!\n
@@ -112,6 +138,7 @@ Commands:
 /help if you need help on how to use this bot
 /download [Book Name] to get the book you want"""
     bot.send_message(message.chat.id, welcome_msg)
+
 
 @bot.message_handler(commands=["help"])
 def help_message(message):
@@ -121,5 +148,6 @@ Just send me the title of the book and I'll send it to you.
 /download [Book Name] to get the book you want
 """
     bot.send_message(message.chat.id, msg)
+
 
 bot.polling()

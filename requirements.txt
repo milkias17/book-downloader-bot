@@ -1,2 +1,12 @@
-libgen_api==0.5.0
+beautifulsoup4==4.11.1
+bs4==0.0.1
+certifi==2022.6.15
+charset-normalizer==2.1.1
+idna==3.3
+libgen-api==0.5.0
+lxml==4.9.1
 pyTelegramBotAPI==3.8.2
+python-dotenv==0.20.0
+requests==2.28.1
+soupsieve==2.3.2.post1
+urllib3==1.26.12

@@ -1,2 +1,4 @@
 current_results.db
 __pycache__/
+.env
+env/
